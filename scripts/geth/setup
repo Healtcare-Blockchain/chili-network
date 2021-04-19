@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd /srv/geth
+echo $(pwd)
+echo "3d90219cda89d9d4d3d556e6c1d20a160f9520a7cf8b7a75507d1bf88ba8f00f" > ./scripts/geth/privatekey
+echo "Mushiness-Rural-Agency0-Outsider-Strength-Racing" > ./scripts/geth/password
+
+geth account import --datadir data --password ./scripts/geth/password ./scripts/geth/privatekey

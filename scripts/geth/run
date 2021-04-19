@@ -1,0 +1,50 @@
+#!/bin/bash
+
+cd /srv/geth
+
+function find_screen {
+    if screen -ls "$1" | grep -o "^\s*[0-9]*\.$1[ "$'\t'"](" --color=NEVER -m 1 | grep -oh "[0-9]*\.$1" --color=NEVER -m 1 -q >/dev/null; then
+        screen -ls "$1" | grep -o "^\s*[0-9]*\.$1[ "$'\t'"](" --color=NEVER -m 1 | grep -oh "[0-9]*\.$1" --color=NEVER -m 1 2>/dev/null
+        return 0
+    else
+        echo "$1"
+        return 1
+    fi
+}
+
+if find_screen "geth" >/dev/null; then
+    pid=$(find_screen "geth")
+    echo ERROR: Found screen running geth. Quit screen $pid before running this script with: screen -XS $(echo $pid | grep -o "^\s*[0-9]*") quit
+    exit 1 # terminate and indicate error
+fi
+
+screen -L -Logfile geth_log -dmS geth bash -c 'geth \
+--datadir data \
+--identity Miner \
+--networkid 55 \
+--nodiscover \
+--port 30303 \
+--nat extip:52.178.79.173 \
+--unlock 0x69f87BF57DA1dB2ff0e1e837915C3DF018911408 \
+--password /srv/geth/scripts/geth/password \
+--mine \
+--miner.gastarget 80000000 \
+--miner.gasprice 0; \
+exec /bin/bash'
+
+
+echo "Started geth"
+
+screen -L -Logfile rpc_log -dmS rpc bash -c 'geth attach \
+--datadir data  \
+--exec "admin.startRPC(\"10.0.0.255\", 8545, \"*\")" \
+'
+
+echo "Started RPC"
+
+echo "To open the screen running geth, use: screen -r $(find_screen "geth")"
+
+echo "Log output from rpc command"
+echo $(tail -n 5 rpc_log)
+
+tail -F geth_log
